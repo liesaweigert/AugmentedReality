@@ -90,12 +90,12 @@ void display(GLFWwindow* window, const Mat &img_bgr, Eigen::Matrix4f marker_matr
 
     //move to marker position
     glLoadTransposeMatrixf(marker_matrix.data());
-    
+
 
     //render square
-    /*double size = 0.04;
+    double size = 0.04;
     double size_h = 0.02;
-    glColor3f(1.0, 0.0, 0.0);
+    glColor3f(1.0, 0.0, 1.0);
 
     glBegin(GL_QUADS);
         glVertex3f(+size/2.0, +size/2.0, 0);
@@ -131,7 +131,7 @@ void display(GLFWwindow* window, const Mat &img_bgr, Eigen::Matrix4f marker_matr
             glVertex3f(+size/2.0, -size/2.0, j);
             glNormal3f(0.0, 0.0, n);
         }
-    glEnd();*/
+    glEnd();
 
     //render snowman
     /*glColor4f(1.0, 1.0, 1.0, 1.0);
