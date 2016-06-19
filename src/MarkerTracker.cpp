@@ -1,6 +1,6 @@
 #include "MarkerTracker.h"
 
-Eigen::Matrix4f MarkerTracker::find (Mat& img_bgr){
+void MarkerTracker::find (Mat& img_bgr, Marker* buttons, int buttons_count){
 
     Mat img_gray;
 
@@ -22,6 +22,11 @@ Eigen::Matrix4f MarkerTracker::find (Mat& img_bgr){
 
     bool first_stripe = true;
     bool first_marker = true;
+
+    //We assume all markers are not visible at the beginning
+    for (int i = 0; i < buttons_count; i++){
+        buttons[i].visible = false;
+    }
 
     for(int i = 0; i < contours.size(); i++) {
         approxPolyDP(Mat(contours[i]), approx_contours[i], 3, true);
@@ -251,7 +256,19 @@ Eigen::Matrix4f MarkerTracker::find (Mat& img_bgr){
                         }
                     }
 
-                    if (min_marker_id == 4648) {
+                    int current_button = -1;
+                    bool searched_button = false;
+
+                    //the markers we are searching are saved in buttons
+                    //for each button, we see whether the correct marker has been found
+                    for(int m = 0; m < buttons_count; m++){
+                        if (min_marker_id == buttons[m].marker_code){
+                            current_button = m;
+                            searched_button = true;
+                            continue;
+                        }
+                    }
+                    if (searched_button) {
 
                         cout << "The marker rotation: " << min_marker_rotation << ", Marker: " << hex <<
                         min_marker_id << "\n";
@@ -276,7 +293,8 @@ Eigen::Matrix4f MarkerTracker::find (Mat& img_bgr){
                         Eigen::Matrix4f marker_matrix;
                         estimateSquarePose(marker_matrix, exact_corners, 0.048182);
 
-                        return marker_matrix;
+                        buttons[current_button].marker_matrix = marker_matrix;
+                        buttons[current_button].visible = true;
                     }
                 }
             }

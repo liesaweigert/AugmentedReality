@@ -7,17 +7,18 @@
 #include <Eigen/StdVector>
 #include "opencv2/opencv.hpp"
 #include "MarkerTracker.h"
+//#include "AssimpModel.h"
+
 
 using namespace cv;
 using namespace std;
-
-
 
 //camera settings
 const int camera_width = 1280;
 const int camera_height = 720;
 const int virtual_camera_angle = 83;
 unsigned char bkgnd[camera_width*camera_height * 3];
+
 
 /* program & OpenGL initialization */
 void initGL(int argc, char *argv[])
@@ -59,7 +60,7 @@ void initVideoStream(cv::VideoCapture &cap)
 	cap.open(0); // open the default camera
 }
 
-void display(GLFWwindow* window, const Mat &img_bgr, Eigen::Matrix4f marker_matrix)
+void display(GLFWwindow* window, const Mat &img_bgr)
 {
 	memcpy(bkgnd, img_bgr.data, sizeof(bkgnd));
 
@@ -85,68 +86,29 @@ void display(GLFWwindow* window, const Mat &img_bgr, Eigen::Matrix4f marker_matr
 
 	glPopMatrix();
     glEnable(GL_DEPTH_TEST);
+}
 
-	glMatrixMode(GL_MODELVIEW);
+void displayform(int form, Eigen::Matrix4f marker_matrix){
+    glMatrixMode(GL_MODELVIEW);
 
-    //move to marker position
+    glColor4f(1.0, 0.0, 0.0, 1.0);
+
+    //transform to marker
     glLoadTransposeMatrixf(marker_matrix.data());
 
-
-    //render square
-    double size = 0.04;
-    double size_h = 0.02;
-    glColor3f(1.0, 0.0, 1.0);
-
-    glBegin(GL_QUADS);
-        glVertex3f(+size/2.0, +size/2.0, 0);
-        glVertex3f(-size/2.0, +size/2.0, 0);
-        glVertex3f(-size/2.0, +size/2.0, -size);
-        glVertex3f(+size/2.0, +size/2.0, -size);
-        glNormal3f(0.0, 1.0, 0.0);
-
-        glVertex3f(-size/2.0, +size/2.0, 0);
-        glVertex3f(-size/2.0, -size/2.0, 0);
-        glVertex3f(-size/2.0, -size/2.0, -size);
-        glVertex3f(-size/2.0, +size/2.0, -size);
-        glNormal3f(-1.0, 0.0, 0.0);
-
-        glVertex3f(+size/2.0, -size/2.0, 0);
-        glVertex3f(-size/2.0, -size/2.0, 0);
-        glVertex3f(-size/2.0, -size/2.0, -size);
-        glVertex3f(+size/2.0, -size/2.0, -size);
-        glNormal3f(0.0, -1.0, 0.0);
-
-        glVertex3f(+size/2.0, +size/2.0, 0);
-        glVertex3f(+size/2.0, -size/2.0, 0);
-        glVertex3f(+size/2.0, -size/2.0, -size);
-        glVertex3f(+size/2.0, +size/2.0, -size);
-        glNormal3f(1.0, 0.0, 0.0);
-
-        //upper and lower quads
-        for (double j = 0; j >= -size; j -= size){
-            int n = (j == 0) ? -1 : 1;
-            glVertex3f(+size/2.0, +size/2.0, j);
-            glVertex3f(-size/2.0, +size/2.0, j);
-            glVertex3f(-size/2.0, -size/2.0, j);
-            glVertex3f(+size/2.0, -size/2.0, j);
-            glNormal3f(0.0, 0.0, n);
-        }
-    glEnd();
-
-    //render snowman
-    /*glColor4f(1.0, 1.0, 1.0, 1.0);
-    glPushMatrix();
+    //move to marker position
+    if(form == 0){
         drawSphere(0.04, 10, 100);
-        glPushMatrix();
-            glTranslatef(0.0, 0.0, 0.04);
-            drawSphere(0.02, 10, 10);
-    glPopMatrix();*/
-
+    } else {
+        drawCube(0.04);
+    }
 }
 
 int main(int argc, char* argv[])
 {
 	GLFWwindow* window;
+
+    bool game_on = false;
 
 	/* Initialize the library */
 	if (!glfwInit())
@@ -160,6 +122,11 @@ int main(int argc, char* argv[])
 		glfwTerminate();
 		return -1;
 	}
+
+    //create a random number (0 or 1 - sphere or cube)
+    int form;
+    int frames_button_0_pressed = 0;
+    int frames_botton_1_pressed = 0;
 
 	glfwMakeContextCurrent(window);
 	glfwSwapInterval(1);
@@ -180,8 +147,13 @@ int main(int argc, char* argv[])
     glLoadIdentity();
     gluPerspective(virtual_camera_angle, (double)window_width/(double)window_height, 0.01, 100);
 
+    //set the two values for yes and no
+    //sphere = 1228(4648) - cube =1c44(7236) - button for display = 02c2(706)
+    Marker buttons[3];
+    buttons[0].marker_code = 4648;
+    buttons[1].marker_code = 7236;
+    buttons[2].marker_code = 90;
 
-	Eigen::Matrix4f marker_matrix;
 
 	/* Loop until the user closes the window */
 	while (!glfwWindowShouldClose(window))
@@ -199,10 +171,35 @@ int main(int argc, char* argv[])
 
 		/* Find the markers in the frame */
 		MarkerTracker mt;
-        marker_matrix = mt.find(img_bgr);
+        mt.find(img_bgr, buttons, 3);
+
+        //the game starts when both markers/buttons are visible
+        if (!game_on && buttons[0].visible && buttons[1].visible){
+            game_on = true;
+            form = rand() % 2;
+        }
+
+        display(window, img_bgr);
 
 		/* Render here */
-        display(window, img_bgr, marker_matrix);
+        if (game_on) {
+            displayform(form, buttons[2].marker_matrix);
+        }
+
+        //see whether one marker is pressed
+        if (game_on && !buttons[0].visible){
+            frames_button_0_pressed++;
+        }
+        if(game_on && !buttons[1].visible){
+            frames_botton_1_pressed++;
+        }
+
+        //after one marker has been pressed for 10 frames the result is
+        //evaluated and the game starts over
+        if (frames_button_0_pressed > 10 || frames_botton_1_pressed > 10){
+            game_on = false;
+            frames_botton_1_pressed = frames_button_0_pressed = 0;
+        }
 
 		/* Swap front and back buffers */
 		glfwSwapBuffers(window);

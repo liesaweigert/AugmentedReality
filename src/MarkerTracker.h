@@ -10,10 +10,16 @@
 using namespace std;
 using namespace cv;
 
+struct Marker{
+    int marker_code;
+    Eigen::Matrix4f marker_matrix;
+    bool visible;
+};
+
 class MarkerTracker {
 
     public:
-        Eigen::Matrix4f find (Mat& image);
+        void find (Mat& image, Marker* buttons, int buttons_count);
 
     private:
         int sampleSubPix(const Mat &point_source, const Point2f &p);

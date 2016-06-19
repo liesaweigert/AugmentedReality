@@ -49,3 +49,41 @@ void drawCone(GLdouble base, GLdouble height, GLint slices, GLint stacks)
 
 	gluDeleteQuadric(quadric);
 }
+
+void drawCube(double size){
+	glBegin(GL_QUADS);
+	glVertex3f(+size/2.0, +size/2.0, 0);
+	glVertex3f(-size/2.0, +size/2.0, 0);
+	glVertex3f(-size/2.0, +size/2.0, -size);
+	glVertex3f(+size/2.0, +size/2.0, -size);
+	glNormal3f(0.0, 1.0, 0.0);
+
+	glVertex3f(-size/2.0, +size/2.0, 0);
+	glVertex3f(-size/2.0, -size/2.0, 0);
+	glVertex3f(-size/2.0, -size/2.0, -size);
+	glVertex3f(-size/2.0, +size/2.0, -size);
+	glNormal3f(-1.0, 0.0, 0.0);
+
+	glVertex3f(+size/2.0, -size/2.0, 0);
+	glVertex3f(-size/2.0, -size/2.0, 0);
+	glVertex3f(-size/2.0, -size/2.0, -size);
+	glVertex3f(+size/2.0, -size/2.0, -size);
+	glNormal3f(0.0, -1.0, 0.0);
+
+	glVertex3f(+size/2.0, +size/2.0, 0);
+	glVertex3f(+size/2.0, -size/2.0, 0);
+	glVertex3f(+size/2.0, -size/2.0, -size);
+	glVertex3f(+size/2.0, +size/2.0, -size);
+	glNormal3f(1.0, 0.0, 0.0);
+
+	//upper and lower quads
+	for (double j = 0; j >= -size; j -= size){
+		int n = (j == 0) ? -1 : 1;
+		glVertex3f(+size/2.0, +size/2.0, j);
+		glVertex3f(-size/2.0, +size/2.0, j);
+		glVertex3f(-size/2.0, -size/2.0, j);
+		glVertex3f(+size/2.0, -size/2.0, j);
+		glNormal3f(0.0, 0.0, n);
+	}
+	glEnd();
+}
