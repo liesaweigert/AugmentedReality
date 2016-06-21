@@ -40,12 +40,12 @@ void MarkerTracker::find (Mat& img_bgr, Marker* buttons, int buttons_count){
             }
 
             //rendering the contours in the image
-            polylines(img_bgr, approx_contours[i], true, white, 3);
+            //polylines(img_bgr, approx_contours[i], true, white, 3);
 
             Vec4f edge_lines[4];
 
             for(int j = 0; j < 4; j++){
-                circle(img_bgr, approx_contours[i][j], 4, red, 4);
+                //circle(img_bgr, approx_contours[i][j], 4, red, 4);
 
                 //calculate distanced in x and y direction for vectors
                 int dx = approx_contours[i][(j + 1) % 4].x - approx_contours[i][j].x;
@@ -76,7 +76,7 @@ void MarkerTracker::find (Mat& img_bgr, Marker* buttons, int buttons_count){
                     Point dot = approx_contours[i][j] + ((approx_contours[i][(j + 1) % 4] - approx_contours[i][j]) * k / 7);
 
                     //visualization of separating dot
-                    circle(img_bgr, dot, 3, blue, 2);
+                    //circle(img_bgr, dot, 3, blue, 2);
 
                     //calculation of the exact(subpixel accuracy) position of the edges
                     Mat stripe (stripe_size, CV_8UC1);
@@ -112,6 +112,8 @@ void MarkerTracker::find (Mat& img_bgr, Marker* buttons, int buttons_count){
                         sobel_stripe[n - 1] = first_row + third_row;
                     }
 
+                    //uncomment if you want to see the stripe
+                    /*
                     if (first_stripe) {
                         //display the stripe in a new window
                         namedWindow("Stripe", WINDOW_NORMAL);
@@ -126,6 +128,7 @@ void MarkerTracker::find (Mat& img_bgr, Marker* buttons, int buttons_count){
 
                         first_stripe = false;
                     }
+                    */
 
                     //finding the maximum pixel in the sobel_values
                     int max_value = -1;
@@ -163,7 +166,7 @@ void MarkerTracker::find (Mat& img_bgr, Marker* buttons, int buttons_count){
                     exact_edges[k - 1] = final_point;
 
                     //And now visualization, so I know I am hecka smart
-                    circle(img_bgr, final_point, 3, white, 1);
+                    //circle(img_bgr, final_point, 3, white, 1);
                 } // end of iteration through 7 stripes
 
                 //Mat exact_points(Size(1,6), CV_32FC2, exact_edge_points);
@@ -179,7 +182,7 @@ void MarkerTracker::find (Mat& img_bgr, Marker* buttons, int buttons_count){
                 x2.y = edge_lines[j][3] + (int)(50 * edge_lines[j][1]);
 
                 //visualize the lines
-                line(img_bgr, x1, x2, blue, 1, 8, 0);
+                //line(img_bgr, x1, x2, blue, 1, 8, 0);
             } //j free - end of iteration through 4 edges of the marker
 
             Point2f exact_corners[4];
@@ -187,7 +190,7 @@ void MarkerTracker::find (Mat& img_bgr, Marker* buttons, int buttons_count){
             //now compute the intersections of the lines
             for (int j = 0; j < 4; j++){
                 exact_corners[j] = intersection(edge_lines[j], edge_lines[(j + 1) % 4]);
-                circle(img_bgr, exact_corners[j], 5, white, 3);
+                //circle(img_bgr, exact_corners[j], 5, white, 3);
             }
 
             //calculating the perspective transformation
@@ -215,6 +218,8 @@ void MarkerTracker::find (Mat& img_bgr, Marker* buttons, int buttons_count){
                 uint16_t marker_ids[4];
                 int min_marker_rotation = 0;
 
+                //uncomment if you want to see the marker
+                /*
                 if (first_marker) {
                     //display the marker in a new window
                     namedWindow("Marker", WINDOW_NORMAL);
@@ -224,6 +229,7 @@ void MarkerTracker::find (Mat& img_bgr, Marker* buttons, int buttons_count){
 
                     first_marker = false;
                 }
+                */
 
                 //save the marker-ids (0 = white, 1 = black)
                 for (int j = 0; j < 4; j++){ //four rotations

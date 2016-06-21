@@ -50,6 +50,7 @@ void drawCone(GLdouble base, GLdouble height, GLint slices, GLint stacks)
 	gluDeleteQuadric(quadric);
 }
 
+
 void drawCube(double size){
 	glBegin(GL_QUADS);
 	glVertex3f(+size/2.0, +size/2.0, 0);
