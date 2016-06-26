@@ -8,7 +8,7 @@
 #include "opencv2/opencv.hpp"
 #include "MarkerTracker.h"
 #include "DrawPrimitives.h"
-//#include "RenderText.h"
+#include "RenderText.h"
 
 //Mac
 #include <GLUT/glut.h>
@@ -133,6 +133,9 @@ int main(int argc, char* argv[])
 		return -1;
 	}
 
+    //init freetype text rendering
+    init_freetype();
+
     //create a random number (0 or 1 - sphere or cube)
     int form;
     int frames_button_0_pressed = 0;
@@ -203,6 +206,8 @@ int main(int argc, char* argv[])
         if(game_on && !buttons[1].visible){
             frames_botton_1_pressed++;
         }
+
+		render_text("Hello World!", 0.0, 0.0, 1.0, glm::vec3(1.0, 0.8f, 0.2f));
 
         //after one marker has been pressed for 10 frames the result is
         //evaluated and the game starts over

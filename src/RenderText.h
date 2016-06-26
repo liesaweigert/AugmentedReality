@@ -8,24 +8,30 @@
 #include <stdio.h>
 #include <string.h>
 #include <iostream>
+#include <map>
 #include <math.h>
 #include <GLUT/glut.h>
+#include <glm/glm.hpp>
+#include "Shader.h"
 
 //install with 'brew install freetype' or whatever windows does
 #include <ft2build.h>
-#include <opencv2/core/matx.hpp>
 #include FT_FREETYPE_H
 
-#define WIDTH 1280
-#define HEIGHT 720
+//Properties
+#include "Shader.h"
+
+using namespace glm;
 
 struct Character{
-    GLuint texture_id;  //ID handle of the glyph texture
-    cv::Vec2i size;     //size of the Glyph
-    cv::Vec2i bearing;  //offset from baseline to left/top of glyph
-    GLuint advance;     //horizontal offset to advance to next glyph
+    GLuint texture_id;
+    ivec2 size;
+    ivec2 bearing;
+    GLuint advance;
 };
 
-void print();
+void init_freetype();
+
+void render_text(std::string text, GLfloat x, GLfloat y, GLfloat scale, glm::vec3 color);
 
 #endif //AR_RENDERTEXT_H
