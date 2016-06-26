@@ -9,6 +9,11 @@ std::map<GLchar, Character> characters;
 GLuint VAO, VBO;
 
 GLuint program;
+GLint attribute_coord;
+GLint uniform_tex;
+GLint uniform_color;
+
+GLfloat black[4] = { 0, 0, 0, 1 };
 
 const GLuint WIDTH = 800, HEIGHT = 600;
 
@@ -17,7 +22,7 @@ void render_text(std::string text, GLfloat x, GLfloat y, GLfloat scale, glm::vec
     glMatrixMode(GL_MODELVIEW);
 
     glUseProgram(program);
-    glUniform3f(glGetUniformLocation(program, "color"), color.x, color.y, color.z);
+    glUniform4fv(uniform_color, 1, black);
     glActiveTexture(GL_TEXTURE0);
     glBindVertexArrayAPPLE(VAO);
 
@@ -32,7 +37,22 @@ void render_text(std::string text, GLfloat x, GLfloat y, GLfloat scale, glm::vec
 
         GLfloat w = ch.size.x * scale;
         GLfloat h = ch.size.y * scale;
+
+
         // Update VBO for each character
+        point box[4] = {
+                {xpos, -ypos, 0, 0},
+                {xpos + w, -ypos, 1, 0},
+                {xpos, -ypos - h, 0, 1},
+                {xpos + w, -ypos - h, 1, 1},
+        };
+
+        /* Draw the character on the screen */
+        glBufferData(GL_ARRAY_BUFFER, sizeof box, box, GL_DYNAMIC_DRAW);
+        glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+
+
+
         GLfloat vertices[6][4] = {
                 { xpos,     ypos + h,   0.0, 0.0 },
                 { xpos,     ypos,       0.0, 1.0 },
@@ -63,12 +83,6 @@ void init_freetype(){
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-
-    program = LoadShader("/Users/liesaweigert/ClionProjects/AR/src/RenderText.frag",
-                         "/Users/liesaweigert/ClionProjects/AR/src/RenderText.vert");
-    glUseProgram(program);
-    //glUniformMatrix4fv(glGetUniformLocation(program, "projection"), 1, GL_FALSE, glm::value_ptr(projection));
-
     FT_Library ft;
 
     if(FT_Init_FreeType(&ft)) {
@@ -79,6 +93,21 @@ void init_freetype(){
     if (FT_New_Face(ft, "/Users/liesaweigert/ClionProjects/AR/assets/FreeSans.ttf", 0, &face)){
         std::cout << "ERROR: Could not open font\n";
     }
+
+    program = create_program("/Users/liesaweigert/ClionProjects/AR/src/RenderText.vert","/Users/liesaweigert/ClionProjects/AR/src/RenderText.frag");
+    if (program == 0){
+        std::cout << "ERROR: Could not load shaders";
+    }
+
+    attribute_coord = get_attrib(program, "coord");
+    uniform_tex = get_uniform(program, "tex");
+    uniform_color = get_uniform(program, "color");
+
+    if(attribute_coord == -1 || uniform_tex == -1 || uniform_color == -1) {
+        std::cout << "ERROR: Could not load attributes";
+    }
+
+    glGenBuffers(1, &VBO);
 
     //height: 48, width: automatic
     FT_Set_Pixel_Sizes(face, 0, 48);
@@ -138,7 +167,6 @@ void init_freetype(){
     glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, 4 * sizeof(GLfloat), 0);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindVertexArrayAPPLE(0);
-
 }
 
 

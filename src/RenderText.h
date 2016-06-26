@@ -12,14 +12,13 @@
 #include <math.h>
 #include <GLUT/glut.h>
 #include <glm/glm.hpp>
-#include "Shader.h"
+#include "shader_utils.h"
 
 //install with 'brew install freetype' or whatever windows does
 #include <ft2build.h>
 #include FT_FREETYPE_H
 
 //Properties
-#include "Shader.h"
 
 using namespace glm;
 
@@ -28,6 +27,13 @@ struct Character{
     ivec2 size;
     ivec2 bearing;
     GLuint advance;
+};
+
+struct point {
+    GLfloat x;
+    GLfloat y;
+    GLfloat s;
+    GLfloat t;
 };
 
 void init_freetype();
