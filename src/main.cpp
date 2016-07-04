@@ -124,6 +124,11 @@ int main(int argc, char* argv[])
 	if (!glfwInit())
 		return -1;
 
+	glfwWindowHint (GLFW_CONTEXT_VERSION_MAJOR, 3);
+	glfwWindowHint (GLFW_CONTEXT_VERSION_MINOR, 2);
+	glfwWindowHint (GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
+	glfwWindowHint (GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+
 	// initialize the window system
 	/* Create a windowed mode window and its OpenGL context */
 	window = glfwCreateWindow(camera_width, camera_height, "PokeDigi", NULL, NULL);
@@ -133,9 +138,6 @@ int main(int argc, char* argv[])
 		return -1;
 	}
 
-    //init freetype text rendering
-    init_freetype();
-
     //create a random number (0 or 1 - sphere or cube)
     int form;
     int frames_button_0_pressed = 0;
@@ -143,6 +145,7 @@ int main(int argc, char* argv[])
 
 	glfwMakeContextCurrent(window);
 	glfwSwapInterval(1);
+
 
 	int window_width, window_height;
 	glfwGetFramebufferSize(window, &window_width, &window_height);
@@ -207,7 +210,6 @@ int main(int argc, char* argv[])
             frames_botton_1_pressed++;
         }
 
-		render_text("Hello World!", 0.0, 0.0, 1.0, glm::vec3(1.0, 0.8f, 0.2f));
 
         //after one marker has been pressed for 10 frames the result is
         //evaluated and the game starts over
@@ -224,6 +226,7 @@ int main(int argc, char* argv[])
 		glfwPollEvents();
 	}
 
+	//freetype_terminate();
 	glfwTerminate();
 
 	return 0;
