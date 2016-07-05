@@ -8,7 +8,7 @@
 #include "opencv2/opencv.hpp"
 #include "MarkerTracker.h"
 #include "DrawPrimitives.h"
-//#include "RenderText.h"
+#include "RenderText.h"
 
 //Mac
 #include <GLUT/glut.h>
@@ -97,13 +97,14 @@ void display(GLFWwindow* window, const Mat &img_bgr)
     glEnable(GL_DEPTH_TEST);
 }
 
-void display_form(int form, Eigen::Matrix4f marker_matrix){
+void display_form(int form, Eigen::Matrix4f marker_matrix, float falling){
     glMatrixMode(GL_MODELVIEW);
 
     glColor4f(1.0, 0.0, 0.0, 1.0);
 
     //transform to marker
     glLoadTransposeMatrixf(marker_matrix.data());
+    glTranslatef(0.0, 0.0, falling);
 
     //move to marker position
     if(form == 0){
@@ -124,6 +125,7 @@ int main(int argc, char* argv[])
 	if (!glfwInit())
 		return -1;
 
+
 	// initialize the window system
 	/* Create a windowed mode window and its OpenGL context */
 	window = glfwCreateWindow(camera_width, camera_height, "PokeDigi", NULL, NULL);
@@ -137,9 +139,11 @@ int main(int argc, char* argv[])
     int form;
     int frames_button_0_pressed = 0;
     int frames_botton_1_pressed = 0;
+	float falling = -0.12; //arbitrary value that looked ok
 
 	glfwMakeContextCurrent(window);
 	glfwSwapInterval(1);
+
 
 	int window_width, window_height;
 	glfwGetFramebufferSize(window, &window_width, &window_height);
@@ -193,7 +197,13 @@ int main(int argc, char* argv[])
 
 		/* Render here */
         if (game_on) {
-            display_form(form, buttons[2].marker_matrix);
+            display_form(form, buttons[2].marker_matrix, falling);
+            falling += glfwGetTime() * 0.00005;
+            if (falling >= 0.0){
+                game_on = false;
+                frames_botton_1_pressed = frames_button_0_pressed = 0;
+                falling = -0.12;
+            }
         }
 
         //see whether one marker is pressed
@@ -204,12 +214,14 @@ int main(int argc, char* argv[])
             frames_botton_1_pressed++;
         }
 
+
         //after one marker has been pressed for 10 frames the result is
         //evaluated and the game starts over
         if (frames_button_0_pressed > 10 || frames_botton_1_pressed > 10){
 
             game_on = false;
             frames_botton_1_pressed = frames_button_0_pressed = 0;
+            falling = -0.12;
         }
 
 		/* Swap front and back buffers */
@@ -219,6 +231,7 @@ int main(int argc, char* argv[])
 		glfwPollEvents();
 	}
 
+	//freetype_terminate();
 	glfwTerminate();
 
 	return 0;
