@@ -84,7 +84,7 @@ void drawCube(double size){
 		glVertex3f(-size/2.0, +size/2.0, j);
 		glVertex3f(-size/2.0, -size/2.0, j);
 		glVertex3f(+size/2.0, -size/2.0, j);
-		glNormal3f(0.0, 0.0, n);
+		glNormal3f(0.0, 0.0, -n);
 	}
 	glEnd();
 }
