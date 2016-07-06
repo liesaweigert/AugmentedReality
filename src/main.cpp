@@ -66,6 +66,7 @@ void initGL(int argc, char *argv[])
 
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
 }
 
 void initVideoStream(cv::VideoCapture &cap)
@@ -122,6 +123,23 @@ void display_form(int form, Eigen::Matrix4f marker_matrix, float falling){
     }
 }
 
+void display_fallthrough(Eigen::Matrix4f marker_matrix){
+
+    glClear(GL_DEPTH_BUFFER_BIT);
+
+    glMatrixMode(GL_MODELVIEW);
+
+    glColor4f(0.0, 0.0, 0.0, 1.0);
+    glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
+
+    //transform to marker
+    glLoadTransposeMatrixf(marker_matrix.data());
+    glTranslatef(0.0, 0.0, 0.06);
+    drawCube(0.08);
+
+    glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+}
+
 
 
 int main(int argc, char* argv[])
@@ -129,6 +147,7 @@ int main(int argc, char* argv[])
 	GLFWwindow* window;
 
     bool game_on = false;
+    float start_game_time = 0.0;
 
 	/* Initialize the library */
 	if (!glfwInit())
@@ -210,6 +229,7 @@ int main(int argc, char* argv[])
         //the game starts when both markers/buttons are visible
         if (!game_on && buttons[0].visible && buttons[1].visible){
             game_on = true;
+            start_game_time = glfwGetTime();
             form = rand() % 2;
         }
 
@@ -222,13 +242,12 @@ int main(int argc, char* argv[])
         String wrong_string = "-" + std::to_string(wrong);
         render_text(wrong_string.c_str(), 1200, 20, red, 48);
 
-
-
 		/* Render here */
         if (game_on) {
+            display_fallthrough(buttons[2].marker_matrix);
             display_form(form, buttons[2].marker_matrix, falling);
-            falling += glfwGetTime() * 0.00005;
-            if (falling >= 0.0){
+            falling += (glfwGetTime() - start_game_time) * 0.0002;
+            if (falling >= 0.1){
                 game_on = false;
                 frames_botton_1_pressed = frames_button_0_pressed = 0;
                 falling = -0.12;
@@ -248,8 +267,6 @@ int main(int argc, char* argv[])
         //after one marker has been pressed for 10 frames the result is
         //evaluated and the game starts over
         if (frames_button_0_pressed > 10 || frames_botton_1_pressed > 10){
-            game_on = false;
-            frames_botton_1_pressed = frames_button_0_pressed = 0;
             falling = -0.12;
             if (frames_button_0_pressed > 10 && frames_botton_1_pressed > 10){
                 wrong++;
@@ -258,6 +275,21 @@ int main(int argc, char* argv[])
             } else if (frames_botton_1_pressed > 0 && form == 1){
                 correct++;
             } else wrong++;
+            game_on = false;
+            frames_botton_1_pressed = frames_button_0_pressed = 0;
+        }
+
+        if(glfwGetTime() >= 55 && glfwGetTime() <= 60){
+            int restTime = 60 - (int)glfwGetTime();
+            render_text(std::to_string(restTime).c_str(), 600, 300, red, 120);
+        }
+
+        if(glfwGetTime() > 60){
+            game_on = false;
+            frames_botton_1_pressed = frames_button_0_pressed = 0;
+            falling = -0.12;
+            String highscore = "Your new highscore is: " + std::to_string(correct);
+            render_text(highscore.c_str(), 200, 300, green, 80);
         }
 
 		/* Swap front and back buffers */
