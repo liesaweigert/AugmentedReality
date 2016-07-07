@@ -1,4 +1,5 @@
-﻿#define GLFW_INCLUDE_GLU
+﻿#include <GL/glew.h>
+#define GLFW_INCLUDE_GLU
 
 #include <iostream>
 #include <GLFW/glfw3.h>
@@ -29,35 +30,42 @@ const int camera_height = 720;
 const int virtual_camera_angle = 83;
 unsigned char bkgnd[camera_width*camera_height * 3];
 
+
+GLfloat green[4] = { 0.0, 1.0, 0.0, 1.0 };
+GLfloat red[4] = { 1.0, 0.0, 0.0, 1.0 };
+GLfloat darkgreen[4] = {0.0, 0.5, 0.2, 1.0};
+
 /* program & OpenGL initialization */
-void initGL(int argc, char *argv[])
-{
-	// initialize the GL library
-	// pixel storage/packing stuff
-	glPixelStorei(GL_PACK_ALIGNMENT, 1); // for glReadPixels​
-	glPixelStorei(GL_UNPACK_ALIGNMENT, 1); // for glTexImage2D​
-	glPixelZoom(1.0, -1.0);
+void initGL(int argc, char *argv[]) {
+    // initialize the GL library
+    // pixel storage/packing stuff
+    glPixelStorei(GL_PACK_ALIGNMENT, 1); // for glReadPixels​
+    glPixelStorei(GL_UNPACK_ALIGNMENT, 1); // for glTexImage2D​
+    glPixelZoom(1.0, -1.0);
 
-	// enable and set colors
-	glEnable(GL_COLOR_MATERIAL);
-	glClearColor(0, 0, 0, 1.0);
+    // enable and set colors
+    glEnable(GL_COLOR_MATERIAL);
+    glClearColor(0, 0, 0, 1.0);
 
-	// enable and set depth parameters
-	glEnable(GL_DEPTH_TEST);
-	glClearDepth(1.0);
+    // enable and set depth parameters
+    glEnable(GL_DEPTH_TEST);
+    glClearDepth(1.0);
 
-	// light parameters
-	GLfloat light_pos[] = { 1.0f, 1.0f, 1.0f, 0.0f };
-	GLfloat light_amb[] = { 0.2f, 0.2f, 0.2f, 1.0f };
-	GLfloat light_dif[] = { 0.9f, 0.9f, 0.9f, 1.0f };
+    // light parameters
+    GLfloat light_pos[] = {0.0f, 0.0f, 0.0f, 1.0f};
+    GLfloat light_amb[] = {0.2f, 0.2f, 0.2f, 1.0f};
+    GLfloat light_dif[] = {0.9f, 0.9f, 0.9f, 1.0f};
 
-	// enable lighting
-	glLightfv(GL_LIGHT0, GL_POSITION, light_pos);
-	glLightfv(GL_LIGHT0, GL_AMBIENT, light_amb);
-	glLightfv(GL_LIGHT0, GL_DIFFUSE, light_dif);
-	glEnable(GL_LIGHTING);
-	glEnable(GL_LIGHT0);
-	glShadeModel(GL_SMOOTH);
+    // enable lighting
+    glLightfv(GL_LIGHT0, GL_POSITION, light_pos);
+    glLightfv(GL_LIGHT0, GL_AMBIENT, light_amb);
+    glLightfv(GL_LIGHT0, GL_DIFFUSE, light_dif);
+    glEnable(GL_LIGHTING);
+    glEnable(GL_LIGHT0);
+    glShadeModel(GL_SMOOTH);
+
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 }
 
 void initVideoStream(cv::VideoCapture &cap)
@@ -108,11 +116,29 @@ void display_form(int form, Eigen::Matrix4f marker_matrix, float falling){
 
     //move to marker position
     if(form == 0){
-        drawSphere(0.04, 10, 100);
+        glutSolidSphere(0.02, 10, 100);
     } else {
         drawCube(0.04);
     }
 }
+
+void display_fallthrough(Eigen::Matrix4f marker_matrix){
+
+    glClear(GL_DEPTH_BUFFER_BIT);
+
+    glMatrixMode(GL_MODELVIEW);
+
+    glColor4f(0.0, 0.0, 0.0, 1.0);
+    glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
+
+    //transform to marker
+    glLoadTransposeMatrixf(marker_matrix.data());
+    glTranslatef(0.0, 0.0, 0.06);
+    drawCube(0.08);
+
+    glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+}
+
 
 
 int main(int argc, char* argv[])
@@ -120,6 +146,11 @@ int main(int argc, char* argv[])
 	GLFWwindow* window;
 
     bool game_on = false;
+    bool next_game = false;
+    bool highscore_time = false;
+    float start_game_time = 10000.0;
+    float game_duration = 60.0;
+
 
 	/* Initialize the library */
 	if (!glfwInit())
@@ -139,7 +170,10 @@ int main(int argc, char* argv[])
     int form;
     int frames_button_0_pressed = 0;
     int frames_botton_1_pressed = 0;
+
 	float falling = -0.12; //arbitrary value that looked ok
+    int correct = 0;
+    int wrong = 0;
 
 	glfwMakeContextCurrent(window);
 	glfwSwapInterval(1);
@@ -148,6 +182,12 @@ int main(int argc, char* argv[])
 	int window_width, window_height;
 	glfwGetFramebufferSize(window, &window_width, &window_height);
     glViewport(0, 0, window_width, window_height);
+
+    glewExperimental = GL_TRUE;
+    glewInit();
+
+    //init freetype resources
+    init_resources();
 
 	// initialize the GL library
 	initGL(argc, argv);
@@ -168,6 +208,8 @@ int main(int argc, char* argv[])
     buttons[1].marker_code = 7236;
     buttons[2].marker_code = 90;
 
+    const GLubyte* opengl_version = glGetString(GL_VERSION);
+    std::cout << "Using OpenGL Version: " << opengl_version << "\n";
 
 	/* Loop until the user closes the window */
 	while (!glfwWindowShouldClose(window))
@@ -187,22 +229,41 @@ int main(int argc, char* argv[])
 		MarkerTracker mt;
         mt.find(img_bgr, buttons, 3);
 
+
         //the game starts when both markers/buttons are visible
-        if (!game_on && buttons[0].visible && buttons[1].visible){
+        if (next_game && !game_on && buttons[0].visible && buttons[1].visible){
             game_on = true;
             form = rand() % 2;
         }
 
         display(window, img_bgr);
 
+        if(!next_game){
+            String new_game = "To start a new game press both buttons!";
+            render_text(new_game.c_str(), 200, 300, darkgreen, 48);
+            if (!game_on && !buttons[0].visible && !buttons[1].visible && buttons[2].visible) {
+                next_game = true;
+                start_game_time = glfwGetTime();
+            }
+        }
+
+        //render correct and wrong answers
+        String correct_string = "+" + std::to_string(correct);
+        render_text(correct_string.c_str(), 20, 20, green, 48);
+
+        String wrong_string = "-" + std::to_string(wrong);
+        render_text(wrong_string.c_str(), 1200, 20, red, 48);
+
 		/* Render here */
-        if (game_on) {
+        if (game_on && next_game && !highscore_time) {
+            display_fallthrough(buttons[2].marker_matrix);
             display_form(form, buttons[2].marker_matrix, falling);
-            falling += glfwGetTime() * 0.00005;
-            if (falling >= 0.0){
+            falling += (glfwGetTime() - start_game_time) * 0.00005;
+            if (falling >= 0.04){
                 game_on = false;
                 frames_botton_1_pressed = frames_button_0_pressed = 0;
                 falling = -0.12;
+                wrong++;
             }
         }
 
@@ -218,10 +279,38 @@ int main(int argc, char* argv[])
         //after one marker has been pressed for 10 frames the result is
         //evaluated and the game starts over
         if (frames_button_0_pressed > 10 || frames_botton_1_pressed > 10){
+            falling = -0.12;
+            if (frames_button_0_pressed > 10 && frames_botton_1_pressed > 10){
+                wrong++;
+            } else if (frames_button_0_pressed > 0 && form == 0){
+                correct++;
+            } else if (frames_botton_1_pressed > 0 && form == 1){
+                correct++;
+            } else wrong++;
+            game_on = false;
+            frames_botton_1_pressed = frames_button_0_pressed = 0;
+        }
 
+        float current_game_time = glfwGetTime() - start_game_time;
+        if(current_game_time >= (game_duration - 5) && current_game_time <= game_duration){
+            int restTime = game_duration - current_game_time;
+            render_text(std::to_string(restTime).c_str(), 600, 300, red, 120);
+        }
+
+        if(current_game_time > game_duration && current_game_time < (game_duration + 5)){
             game_on = false;
             frames_botton_1_pressed = frames_button_0_pressed = 0;
             falling = -0.12;
+            String highscore = "Your new highscore is: " + std::to_string(correct);
+            render_text(highscore.c_str(), 200, 300, darkgreen, 80);
+            highscore_time = true;
+        }
+
+        if(current_game_time > (game_duration + 5) && highscore_time){
+            next_game = false;
+            correct = 0;
+            wrong = 0;
+            highscore_time = false;
         }
 
 		/* Swap front and back buffers */
