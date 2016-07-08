@@ -8,8 +8,8 @@
 #include <Eigen/StdVector>
 #include "opencv2/opencv.hpp"
 #include "MarkerTracker.h"
-#include "DrawPrimitives.h"
 #include "RenderText.h"
+#include "Mesh.h"
 
 //Mac
 #include <GLUT/glut.h>
@@ -33,6 +33,7 @@ unsigned char bkgnd[camera_width*camera_height * 3];
 
 GLfloat green[4] = { 0.0, 1.0, 0.0, 1.0 };
 GLfloat red[4] = { 1.0, 0.0, 0.0, 1.0 };
+GLfloat black[4] = {0.0, 0.0, 0.0, 1.0};
 GLfloat darkgreen[4] = {0.0, 0.5, 0.2, 1.0};
 
 /* program & OpenGL initialization */
@@ -52,7 +53,7 @@ void initGL(int argc, char *argv[]) {
     glClearDepth(1.0);
 
     // light parameters
-    GLfloat light_pos[] = {0.0f, 0.0f, 0.0f, 1.0f};
+    GLfloat light_pos[] = {0.0f, 0.0f, -1.0f, 1.0f};
     GLfloat light_amb[] = {0.2f, 0.2f, 0.2f, 1.0f};
     GLfloat light_dif[] = {0.9f, 0.9f, 0.9f, 1.0f};
 
@@ -189,6 +190,38 @@ int main(int argc, char* argv[])
     //init freetype resources
     init_resources();
 
+    //init Meshes
+    Mesh somethingmon [14] = {Mesh("/Users/liesaweigert/ClionProjects/AR/assets/Agumon.obj",
+                                  "/Users/liesaweigert/ClionProjects/AR/assets/Agumon.png", 20),
+                             Mesh("/Users/liesaweigert/ClionProjects/AR/assets/Digitamamon.obj",
+                                  "/Users/liesaweigert/ClionProjects/AR/assets/Digitamamon.png", 20),
+                             Mesh("/Users/liesaweigert/ClionProjects/AR/assets/Gabumon.obj",
+                                  "/Users/liesaweigert/ClionProjects/AR/assets/Gabumon.png", 20),
+                             Mesh("/Users/liesaweigert/ClionProjects/AR/assets/Hagurumon.obj",
+                                  "/Users/liesaweigert/ClionProjects/AR/assets/Hagurumon.png", 20),
+                             Mesh("/Users/liesaweigert/ClionProjects/AR/assets/Tentomon.obj",
+                                  "/Users/liesaweigert/ClionProjects/AR/assets/Tentomon.png", 20),
+                             Mesh("/Users/liesaweigert/ClionProjects/AR/assets/Bakemon.obj",
+                                  "/Users/liesaweigert/ClionProjects/AR/assets/Bakemon.png", 20),
+                             Mesh("/Users/liesaweigert/ClionProjects/AR/assets/Biyomon.obj",
+                                  "/Users/liesaweigert/ClionProjects/AR/assets/Biyomon.png", 20),
+                             Mesh("/Users/liesaweigert/ClionProjects/AR/assets/BR_Bulbasaur.obj",
+                                  "/Users/liesaweigert/ClionProjects/AR/assets/BR_Bulbasaur.png", 120),
+                             Mesh("/Users/liesaweigert/ClionProjects/AR/assets/BR_Lugia.obj",
+                                  "/Users/liesaweigert/ClionProjects/AR/assets/BR_Lugia.png", 600),
+                             Mesh("/Users/liesaweigert/ClionProjects/AR/assets/Charmander.obj",
+                                  "/Users/liesaweigert/ClionProjects/AR/assets/Charmander.png", 80),
+                             Mesh("/Users/liesaweigert/ClionProjects/AR/assets/BR_Beautifly.obj",
+                                  "/Users/liesaweigert/ClionProjects/AR/assets/Beautifly.png", 150),
+                             Mesh("/Users/liesaweigert/ClionProjects/AR/assets/BR_Shinx.obj",
+                                  "/Users/liesaweigert/ClionProjects/AR/assets/Shinx.png", 60),
+                             Mesh("/Users/liesaweigert/ClionProjects/AR/assets/Pikachu.obj",
+                                  "/Users/liesaweigert/ClionProjects/AR/assets/Pikachu.png", 80),
+                             Mesh("/Users/liesaweigert/ClionProjects/AR/assets/BR_Lumineon.obj",
+                                  "/Users/liesaweigert/ClionProjects/AR/assets/Lumineon.png", 120)
+
+    };
+
 	// initialize the GL library
 	initGL(argc, argv);
 
@@ -229,11 +262,10 @@ int main(int argc, char* argv[])
 		MarkerTracker mt;
         mt.find(img_bgr, buttons, 3);
 
-
         //the game starts when both markers/buttons are visible
         if (next_game && !game_on && buttons[0].visible && buttons[1].visible){
             game_on = true;
-            form = rand() % 2;
+            form = rand() % 14;
         }
 
         display(window, img_bgr);
@@ -257,7 +289,7 @@ int main(int argc, char* argv[])
 		/* Render here */
         if (game_on && next_game && !highscore_time) {
             display_fallthrough(buttons[2].marker_matrix);
-            display_form(form, buttons[2].marker_matrix, falling);
+            somethingmon[form].drawMesh(buttons[2].marker_matrix, falling);
             falling += (glfwGetTime() - start_game_time) * 0.00005;
             if (falling >= 0.04){
                 game_on = false;
@@ -275,16 +307,15 @@ int main(int argc, char* argv[])
             frames_botton_1_pressed++;
         }
 
-
         //after one marker has been pressed for 10 frames the result is
         //evaluated and the game starts over
         if (frames_button_0_pressed > 10 || frames_botton_1_pressed > 10){
             falling = -0.12;
             if (frames_button_0_pressed > 10 && frames_botton_1_pressed > 10){
                 wrong++;
-            } else if (frames_button_0_pressed > 0 && form == 0){
+            } else if (frames_button_0_pressed > 0 && form < 7){
                 correct++;
-            } else if (frames_botton_1_pressed > 0 && form == 1){
+            } else if (frames_botton_1_pressed > 0 && form >= 7){
                 correct++;
             } else wrong++;
             game_on = false;
@@ -313,6 +344,7 @@ int main(int argc, char* argv[])
             highscore_time = false;
         }
 
+        render_text("Pokemon is Copyright Gamefreak, Nintendo and The Pokémon Company 2001-2013", 500, 700, black, 10);
 		/* Swap front and back buffers */
 		glfwSwapBuffers(window);
 
